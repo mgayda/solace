@@ -42,7 +42,6 @@ export default function Home() {
         setAdvocates(json.data);
         setTotal(json.total);
       } catch (error) {
-        console.log("Error fetching advocate data");
         setError("Error fetching advocate data");
       } finally {
         setLoading(false);
@@ -66,7 +65,7 @@ export default function Home() {
         </Box>
       )}
 
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
         Solace Advocates
       </Typography>
 
@@ -82,29 +81,41 @@ export default function Home() {
         sx={{ mb: 4 }}
       />
 
-      <Stack spacing={2}>
+      <Stack spacing={3}>
         {advocates.length > 0 ? (
           advocates.map((advocate) => (
-            <Card>
+            <Card key={advocate.id} sx={{ borderRadius: 2, boxShadow: 3 }}>
               <CardContent>
-                <Typography variant="h6">
+                <Typography variant="h6" sx={{ mb: 1, color: "#061a3e" }}>
                   {advocate.firstName} {advocate.lastName}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
                   {advocate.degree} — {advocate.city}
                 </Typography>
-                <Typography variant="body2">Specialties:</Typography>
-                {advocate.specialties.map((specialty, idx) => (
-                  <Chip key={idx} label={specialty} size="small" />
-                ))}
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                  Specialties:
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
+                  {advocate.specialties.map((specialty, idx) => (
+                    <Chip
+                      key={idx}
+                      label={specialty}
+                      size="small"
+                      sx={{ backgroundColor: "#797e7b", color: "white" }}
+                    />
+                  ))}
+                </Box>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
                   Experience: {advocate.yearsOfExperience} years
                 </Typography>
-                <Typography variant="body2">
-                  {/* TODO: Format number helper */}
-                  Phone: {advocate.phoneNumber.substring(0, 3)}-
-                  {advocate.phoneNumber.substring(3, 6)}-
-                  {advocate.phoneNumber.substring(6, 10)}
+                <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                  Phone: {advocate.phoneNumber.slice(0, 3)}-
+                  {advocate.phoneNumber.slice(3, 6)}-
+                  {advocate.phoneNumber.slice(6)}
                 </Typography>
               </CardContent>
             </Card>
@@ -114,7 +125,7 @@ export default function Home() {
         )}
       </Stack>
 
-      <Box display="flex" justifyContent="center" mt={4}>
+      <Box display="flex" justifyContent="center" mt={5}>
         <Pagination
           count={Math.ceil(total / limit)}
           page={page}
