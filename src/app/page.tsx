@@ -1,91 +1,128 @@
 "use client";
 
+import { useDebounce } from "@/libs/useDebounce";
+import { Advocate } from "@/types/advocate";
+import {
+  Box,
+  TextField,
+  Card,
+  CardContent,
+  Typography,
+  Pagination,
+  Stack,
+  Chip,
+  Skeleton,
+  Alert,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [advocates, setAdvocates] = useState([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState([]);
+  const [advocates, setAdvocates] = useState<Advocate[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10); // TODO: Add results limit dropdown
+  const [loading, setLoading] = useState(true); // TODO: Handle loading
+  const [error, setError] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+
+  const debouncedSearch = useDebounce(searchTerm);
 
   useEffect(() => {
-    console.log("fetching advocates...");
-    fetch("/api/advocates").then((response) => {
-      response.json().then((jsonResponse) => {
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
-      });
-    });
-  }, []);
+    const fetchData = async () => {
+      setLoading(true);
+      const offset = (page - 1) * limit;
 
-  const onChange = (e) => {
-    const searchTerm = e.target.value;
+      try {
+        const response = await fetch(
+          `/api/advocates?query=${encodeURIComponent(
+            debouncedSearch
+          )}&limit=${limit}&offset=${offset}`
+        );
 
-    document.getElementById("search-term").innerHTML = searchTerm;
+        const json = await response.json();
+        setAdvocates(json.data);
+        setTotal(json.total);
+      } catch (error) {
+        console.log("Error fetching advocate data");
+        setError("Error fetching advocate data");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    console.log("filtering advocates...");
-    const filteredAdvocates = advocates.filter((advocate) => {
-      return (
-        advocate.firstName.includes(searchTerm) ||
-        advocate.lastName.includes(searchTerm) ||
-        advocate.city.includes(searchTerm) ||
-        advocate.degree.includes(searchTerm) ||
-        advocate.specialties.includes(searchTerm) ||
-        advocate.yearsOfExperience.includes(searchTerm)
-      );
-    });
-
-    setFilteredAdvocates(filteredAdvocates);
-  };
-
-  const onClick = () => {
-    console.log(advocates);
-    setFilteredAdvocates(advocates);
-  };
+    fetchData();
+  }, [debouncedSearch, page]);
 
   return (
-    <main style={{ margin: "24px" }}>
-      <h1>Solace Advocates</h1>
-      <br />
-      <br />
-      <div>
-        <p>Search</p>
-        <p>
-          Searching for: <span id="search-term"></span>
-        </p>
-        <input style={{ border: "1px solid black" }} onChange={onChange} />
-        <button onClick={onClick}>Reset Search</button>
-      </div>
-      <br />
-      <br />
-      <table>
-        <thead>
-          <th>First Name</th>
-          <th>Last Name</th>
-          <th>City</th>
-          <th>Degree</th>
-          <th>Specialties</th>
-          <th>Years of Experience</th>
-          <th>Phone Number</th>
-        </thead>
-        <tbody>
-          {filteredAdvocates.map((advocate) => {
-            return (
-              <tr>
-                <td>{advocate.firstName}</td>
-                <td>{advocate.lastName}</td>
-                <td>{advocate.city}</td>
-                <td>{advocate.degree}</td>
-                <td>
-                  {advocate.specialties.map((s) => (
-                    <div>{s}</div>
-                  ))}
-                </td>
-                <td>{advocate.yearsOfExperience}</td>
-                <td>{advocate.phoneNumber}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </main>
+    <Box
+      sx={{
+        maxWidth: "960px",
+        mx: "auto",
+        p: 4,
+      }}
+    >
+      {error && (
+        <Box mb={2}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      )}
+
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Solace Advocates
+      </Typography>
+
+      <TextField
+        fullWidth
+        label="Search advocates"
+        variant="outlined"
+        value={searchTerm}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setPage(1);
+        }}
+        sx={{ mb: 4 }}
+      />
+
+      <Stack spacing={2}>
+        {advocates.length > 0 ? (
+          advocates.map((advocate) => (
+            <Card>
+              <CardContent>
+                <Typography variant="h6">
+                  {advocate.firstName} {advocate.lastName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {advocate.degree} — {advocate.city}
+                </Typography>
+                <Typography variant="body2">Specialties:</Typography>
+                {advocate.specialties.map((specialty, idx) => (
+                  <Chip key={idx} label={specialty} size="small" />
+                ))}
+                <Typography variant="body2">
+                  Experience: {advocate.yearsOfExperience} years
+                </Typography>
+                <Typography variant="body2">
+                  {/* TODO: Format number helper */}
+                  Phone: {advocate.phoneNumber.substring(0, 3)}-
+                  {advocate.phoneNumber.substring(3, 6)}-
+                  {advocate.phoneNumber.substring(6, 10)}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Typography variant="h6">No Results Found</Typography>
+        )}
+      </Stack>
+
+      <Box display="flex" justifyContent="center" mt={4}>
+        <Pagination
+          count={Math.ceil(total / limit)}
+          page={page}
+          onChange={(_, newPage) => setPage(newPage)}
+          color="primary"
+        />
+      </Box>
+    </Box>
   );
 }
