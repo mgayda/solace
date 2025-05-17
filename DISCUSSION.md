@@ -1,4 +1,4 @@
-Future improvements:
+### Future improvements:
 
 - Vector indexing for full text search. Search is limited right now.
 - Error handling and schema validation could be generalized/centralized for consistency along with observability.
